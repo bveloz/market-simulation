@@ -13,10 +13,13 @@ The program will take as paramters, configuration files that hold the values of 
 USING MAKEFILE:
 
 To compile in terminal:
+
 $make
 
 To run in terminal:
+
 $make run
 
 To clean files in terminal:
+
 $make clean
