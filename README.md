@@ -10,7 +10,6 @@ Product(s):
 The program will take as paramters, configuration files that hold the values of both customers and products.
 
 
-====================================================================================================================================
 USING MAKEFILE:
 
 To compile in terminal:
