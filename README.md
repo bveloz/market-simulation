@@ -23,3 +23,7 @@ $make run
 To clean files in terminal:
 
 $make clean
+
+To debug program using gdb in terminal:
+
+$make debug
