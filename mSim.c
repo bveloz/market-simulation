@@ -1,4 +1,4 @@
-//tentative version, maybe c++ is better than struct classes
+//tentative version, maybe c++ is better than struct for classes
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +19,7 @@ typedef struct {
     int quantity;
 } Product;
 
-// Function to parse the JSON file and create Customer structures
+// Function to parse the customers.json file
 Customer *parse_customers(const char *filename, int *customer_count) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -56,7 +56,7 @@ Customer *parse_customers(const char *filename, int *customer_count) {
     return customers;
 }
 
-// Function to parse the JSON file and create Product structures
+// Function to parse the products.json file 
 Product *parse_products(const char *filename, int *product_count) {
     FILE *file = fopen(filename, "r");
     if (!file) {
