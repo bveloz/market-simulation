@@ -8,3 +8,14 @@ Product(s):
   Again initially, there will only be one product to start simple, and the values will hold the name, price and availability.
 
 The program will take as paramters, configuration files that hold the values of both customers and products.
+
+
+
+To compile in terminal:
+$make
+
+To run in terminal:
+$make run
+
+To clean files in terminal:
+$make clean
