@@ -1,5 +1,12 @@
 //tentative version, maybe c++ is better than struct for classes
 
+
+#ifdef __STDC_ALLOC_LIB__
+#define __STDC_WANT_LIB_EXT2__ 1
+#else
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,7 +16,28 @@
 typedef struct {
     char *name;
     double budget;
-    char *preference;
+    /* if the number of products expands, the structure of preference may change, to a list of prefereneces with a ranking
+    so the json would look something like this
+    [
+        {
+            "name": Alice,
+            "budget": 150.0,
+            "preference": 
+            [
+                {
+                    "product": "Laptop"
+                    "preference": ".54"
+                },
+                {
+                    "product": "Fruit"
+                    "preference" ".19"
+                }
+            ]
+        }
+    ]
+    where the value of preference is a percentage 0-1 or rating 1-10
+    //*/
+    char *preference; 
 } Customer;
 
 // product 
