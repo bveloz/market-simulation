@@ -1,7 +1,7 @@
 [
     {
         "name": "Gallon of Gasoline",
-        "price": "3.50",
+        "price": 3.50,
         "quantity": 10
     }
 ]
