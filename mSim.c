@@ -11,9 +11,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include "cJSON.h"
+#include "time.h"
+#include "mSim.h"
 
 // customer 
-typedef struct {
+struct Customer 
+{
     char *name;
     double budget;
     /* if the number of products expands, the structure of preference may change, to a list of prefereneces with a ranking
@@ -38,17 +41,19 @@ typedef struct {
     where the value of preference is a percentage 0-1 or rating 1-10
     //*/
     char *preference; 
-} Customer;
+};
 
 // product 
-typedef struct {
+struct Product
+{
     char *name;
     double price;
     int quantity;
-} Product;
+};
 
 // Function to parse the customers.json file
-Customer *parse_customers(const char *filename, int *customer_count) {
+Customer* parse_customers(const char *filename, int *customer_count) 
+{
     FILE *file = fopen(filename, "r");
     if (!file) {
         fprintf(stderr, "Could not open file %s\n", filename);
@@ -85,7 +90,8 @@ Customer *parse_customers(const char *filename, int *customer_count) {
 }
 
 // Function to parse the products.json file 
-Product *parse_products(const char *filename, int *product_count) {
+Product *parse_products(const char *filename, int *product_count) 
+{
     FILE *file = fopen(filename, "r");
     if (!file) {
         fprintf(stderr, "Could not open file %s\n", filename);
