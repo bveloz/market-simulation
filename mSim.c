@@ -51,6 +51,14 @@ struct Product
     int quantity;
 };
 
+struct Wallet
+{
+    Customer* owner;
+    Product* product;
+    int *quantity;
+};
+
+
 // Function to parse the customers.json file
 Customer* parse_customers(const char *filename, int *customer_count) 
 {
