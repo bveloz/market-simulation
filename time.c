@@ -17,9 +17,9 @@ Time* initialize_default_time()
     newTime->hours = (int*)malloc(sizeof(int));
     newTime->minutes = (int*)malloc(sizeof(int));
     newTime->seconds = (int*)malloc(sizeof(int));
-    newTime->hours = 0;
-    newTime->minutes = 0;
-    newTime->seconds = 0;
+    *newTime->hours = 0;
+    *newTime->minutes = 0;
+    *newTime->seconds = 0;
     return newTime;
 }
 
@@ -54,12 +54,22 @@ void increment_time(Time* time, int amount, enum time_type type)
         maxValue = MAX_SECONDS;
     }
     //if the input is larger than maxvalue, subtract 
-    while (amount > maxValue)
+    if (amount >= maxValue)
     {
-        amount -= maxValue;
+        printf("Time increase is too large\n");
+        return;
     }
     //set the pointer to the new value
-    *value = amount;
+    *value += amount;
+    if (*value >= maxValue)
+    {
+        *value -= maxValue;
+    }
+}
+
+void print_time(Time* t)
+{
+    printf("%02d:%02d:%02d\n", *t->hours, *t->minutes, *t->seconds);
 }
 
 void free_time(Time* victim)
