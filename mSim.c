@@ -55,7 +55,6 @@ struct Wallet
 {
     Customer* owner;
     Product* product;
-    int *quantity;
 };
 
 
@@ -135,9 +134,55 @@ Product *parse_products(const char *filename, int *product_count)
     return products;
 }
 
+//function to create a wallet, customer begins with 0 items
+Wallet* create_wallet(Customer* c, Product* p)
+{
+    Wallet* returnWallet = (Wallet*)malloc(sizeof(Wallet));
+    returnWallet->owner = c;
+    returnWallet->product = (Product*)malloc(sizeof(Product));
+    memcpy(returnWallet->product, p, sizeof(Product));
+    // by default 0 items
+    returnWallet->product->quantity = 0;
+    return returnWallet;
+}
+
+void free_wallet(Wallet* w)
+{
+    free(w->product);
+    w->product = NULL;
+    free(w);
+    w = NULL;
+}
+
+void consume_product(Wallet* consumer, int quantity)
+{
+    if (consumer->product->quantity < quantity)
+    {
+        printf("Attempting to consume more than is available\n");
+    }
+    else
+    {
+        consumer->product->quantity -= quantity;
+    }
+
+}
+
+void purchase_product(Product* Product, int quantity)
+{
+    return;
+}
+
+void restock_product(Product* product, int quantity)
+{
+    product->quantity += quantity;
+}
+
 // Main function to execute the program
-int main(int argc, char *argv[]) {
-    if (argc < 3) {
+int main(int argc, char *argv[]) 
+{
+    int i;
+    if (argc < 3) 
+    {
         fprintf(stderr, "Usage: %s customers.json products.json\n", argv[0]);
         return 1;
     }
@@ -151,19 +196,36 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    
+    //create a new time object
+    Time* t = initialize_default_time();
+    print_time(t);
+
     // Print parsed data
     printf("Customers:\n");
-    for (int i = 0; i < customer_count; i++) {
+    for (i = 0; i < customer_count; i++) {
         printf("Name: %s, Budget: %.2f, Preference: %s\n",
                customers[i].name, customers[i].budget, customers[i].preference);
     }
     
     printf("\nProducts:\n");
-    for (int i = 0; i < product_count; i++) {
+    for (i = 0; i < product_count; i++) {
         printf("Name: %s, Price: %.2f, Quantity: %d\n",
                products[i].name, products[i].price, products[i].quantity);
     }
+    
+    Wallet* customer_wallet = create_wallet(customers, products);
+    printf("\nNew Wallet: %s, %s, %d\n", customer_wallet->owner->name, customer_wallet->product->name, customer_wallet->product->quantity);
+    
+    //pass through a 24 hour cycle
+    for (i = 0; i < 24; i++)
+    {
 
+        increment_time(t, 1, HOUR);
+        print_time(t);
+    }
+
+    printf("Crash\n");
     // Free allocated memory
     for (int i = 0; i < customer_count; i++) {
         free(customers[i].name);
