@@ -1,5 +1,6 @@
 [
     {
+        "product id": 1,
         "name": "Gallon of Gasoline",
         "price": 3.50,
         "quantity": 10
