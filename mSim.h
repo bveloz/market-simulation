@@ -10,7 +10,7 @@ Product* parse_products(const char *, int *);
 Wallet* create_wallet(Customer*, Product*);
 void free_wallet(Wallet*);
 int consume_product(Wallet*, int);
-void purchase_product(Wallet*, int);
+int purchase_product(Wallet*, int, int);
 void restock_product(Product*, int);
 
 #endif

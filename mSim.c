@@ -37,6 +37,11 @@ struct Wallet
     Product* product;
 };
 
+double price_factors[MAX_HOURS] = {
+    1.15, 1.15, 1.10, 1.10, 1.05, 1.05, 0.95, 0.9, 0.85, 0.8,   // Morning Prices
+    0.75, 0.7,  0.8,  0.9,  1.0,  1.1,  1.2,  1.25, 1.2,  1.15, // Afternoon Prices
+    1.1,  1.05, 1.0,  0.95                                      // Evening Prices
+};
 
 // Function to parse the customers.json file
 Customer* parse_customers(const char *filename, int *customer_count) 
@@ -150,10 +155,20 @@ int consume_product(Wallet* consumer, int quantity)
     }
 }
 
-void purchase_product(Wallet* wallet, int quantity)
+int purchase_product(Wallet* wallet, int quantity, int hour)
 {
-
-    return;
+    int cost = wallet->product->price * quantity * hour;
+    if (cost > wallet->owner->budget)
+    {
+        printf("The amount requested is out of budget");
+        return 1;
+    }
+    else
+    {
+        wallet->owner->budget -= cost;
+        wallet->product->quantity += quantity;
+        return 0;
+    }
 }
 
 void restock_product(Product* product, int quantity)
@@ -181,9 +196,7 @@ int main(int argc, char *argv[])
     }
 
     
-    //create a new time object
-    Time* t = initialize_default_time();
-    print_time(t);
+    
 
     // Print parsed data
     printf("Customers:\n");
@@ -200,19 +213,20 @@ int main(int argc, char *argv[])
     
     Wallet* customer_wallet = create_wallet(customers, products);
     printf("\nNew Wallet: %s, %s, %d\n", customer_wallet->owner->name, customer_wallet->product->name, customer_wallet->product->quantity);
-    
+    //create a new time object
+    Time* t = initialize_default_time();
+    printf("Start of day:\n");
     //pass through a 24 hour cycle
-    for (i = 0; i < 24; i++)
+    for (i = 0; i < MAX_HOURS; i++)
     {
-        increment_time(t, 1, HOUR);
         print_time(t);
+        increment_time(t, 1, HOUR);
         if (i > 9 && i < 17)
         {
             consume_product(customer_wallet, 1);
         }
     }
 
-    printf("Crash\n");
     // Free allocated memory
     for (int i = 0; i < customer_count; i++) {
         free(customers[i].name);
