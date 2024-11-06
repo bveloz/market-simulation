@@ -19,27 +19,6 @@ struct Customer
 {
     char *name;
     double budget;
-    /* if the number of products expands, the structure of preference may change, to a list of prefereneces with a ranking
-    so the json would look something like this
-    [
-        {
-            "name": Alice,
-            "budget": 150.0,
-            "preference": 
-            [
-                {
-                    "product": "Laptop"
-                    "preference": ".54"
-                },
-                {
-                    "product": "Fruit"
-                    "preference" ".19"
-                }
-            ]
-        }
-    ]
-    where the value of preference is a percentage 0-1 or rating 1-10
-    //*/
     char *preference; 
 };
 
@@ -49,6 +28,7 @@ struct Product
     char *name;
     double price;
     int quantity;
+    int productId;
 };
 
 struct Wallet
@@ -124,6 +104,7 @@ Product *parse_products(const char *filename, int *product_count)
     
     for (int i = 0; i < *product_count; i++) {
         cJSON *item = cJSON_GetArrayItem(json, i);
+        products[i].productId = cJSON_GetObjectItem(item, "ProductId")->valueint;
         products[i].name = strdup(cJSON_GetObjectItem(item, "name")->valuestring);
         products[i].price = cJSON_GetObjectItem(item, "price")->valuedouble;
         products[i].quantity = cJSON_GetObjectItem(item, "quantity")->valueint;
@@ -154,21 +135,24 @@ void free_wallet(Wallet* w)
     w = NULL;
 }
 
-void consume_product(Wallet* consumer, int quantity)
+int consume_product(Wallet* consumer, int quantity)
 {
     if (consumer->product->quantity < quantity)
     {
         printf("Attempting to consume more than is available\n");
+        return 1;
     }
     else
     {
         consumer->product->quantity -= quantity;
+        printf("%s consumed %d of %s\n", consumer->owner->name, quantity, consumer->product->name);
+        return 0;
     }
-
 }
 
-void purchase_product(Product* Product, int quantity)
+void purchase_product(Wallet* wallet, int quantity)
 {
+
     return;
 }
 
@@ -210,8 +194,8 @@ int main(int argc, char *argv[])
     
     printf("\nProducts:\n");
     for (i = 0; i < product_count; i++) {
-        printf("Name: %s, Price: %.2f, Quantity: %d\n",
-               products[i].name, products[i].price, products[i].quantity);
+        printf("Name: %s, Price: %.2f, Quantity: %d, ProductId: %d\n",
+               products[i].name, products[i].price, products[i].quantity, products[i].productId);
     }
     
     Wallet* customer_wallet = create_wallet(customers, products);
@@ -220,9 +204,12 @@ int main(int argc, char *argv[])
     //pass through a 24 hour cycle
     for (i = 0; i < 24; i++)
     {
-
         increment_time(t, 1, HOUR);
         print_time(t);
+        if (i > 9 && i < 17)
+        {
+            consume_product(customer_wallet, 1);
+        }
     }
 
     printf("Crash\n");
