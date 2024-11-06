@@ -25,16 +25,18 @@ struct Customer
 // product 
 struct Product
 {
+    int productId;
     char *name;
+    char* seller;
     double price;
     int quantity;
-    int productId;
 };
 
 struct Wallet
 {
     Customer* owner;
     Product* product;
+    int capacity;
 };
 
 double price_factors[MAX_HOURS] = {
@@ -111,6 +113,7 @@ Product *parse_products(const char *filename, int *product_count)
         cJSON *item = cJSON_GetArrayItem(json, i);
         products[i].productId = cJSON_GetObjectItem(item, "ProductId")->valueint;
         products[i].name = strdup(cJSON_GetObjectItem(item, "name")->valuestring);
+        products[i].seller = strdup(cJSON_GetObjectItem(item, "seller")->valuestring);
         products[i].price = cJSON_GetObjectItem(item, "price")->valuedouble;
         products[i].quantity = cJSON_GetObjectItem(item, "quantity")->valueint;
     }
@@ -121,7 +124,7 @@ Product *parse_products(const char *filename, int *product_count)
 }
 
 //function to create a wallet, customer begins with 0 items
-Wallet* create_wallet(Customer* c, Product* p)
+Wallet* create_wallet(Customer* c, Product* p, int cap)
 {
     Wallet* returnWallet = (Wallet*)malloc(sizeof(Wallet));
     returnWallet->owner = c;
@@ -129,6 +132,8 @@ Wallet* create_wallet(Customer* c, Product* p)
     memcpy(returnWallet->product, p, sizeof(Product));
     // by default 0 items
     returnWallet->product->quantity = 0;
+    //set capacity
+    returnWallet->capacity = cap;
     return returnWallet;
 }
 
@@ -138,6 +143,18 @@ void free_wallet(Wallet* w)
     w->product = NULL;
     free(w);
     w = NULL;
+}
+
+float calculate_purchase_probability(Wallet* wallet, Product* product)
+{
+    if (wallet->product->productId != product->productId)
+    {
+        printf("The product does not match the wallet\n");
+        return 1;
+    }
+    float probability;
+
+    
 }
 
 int consume_product(Wallet* consumer, int quantity)
@@ -155,12 +172,17 @@ int consume_product(Wallet* consumer, int quantity)
     }
 }
 
-int purchase_product(Wallet* wallet, int quantity, int hour)
+int purchase_product(Wallet* wallet, Product* product, int quantity, int hour)
 {
-    int cost = wallet->product->price * quantity * hour;
+    if (wallet->product->productId != product->productId)
+    {
+        printf("The product does not match the wallet\n");
+        return 1;
+    }
+    int cost = wallet->product->price * quantity * price_factors[hour];
     if (cost > wallet->owner->budget)
     {
-        printf("The amount requested is out of budget");
+        printf("The amount requested is out of budget\n");
         return 1;
     }
     else
@@ -179,13 +201,13 @@ void restock_product(Product* product, int quantity)
 // Main function to execute the program
 int main(int argc, char *argv[]) 
 {
-    int i;
     if (argc < 3) 
     {
         fprintf(stderr, "Usage: %s customers.json products.json\n", argv[0]);
         return 1;
     }
-    
+    int i;
+    srand(1);
     int customer_count, product_count;
     Customer *customers = parse_customers(argv[1], &customer_count);
     Product *products = parse_products(argv[2], &product_count);
@@ -207,11 +229,11 @@ int main(int argc, char *argv[])
     
     printf("\nProducts:\n");
     for (i = 0; i < product_count; i++) {
-        printf("Name: %s, Price: %.2f, Quantity: %d, ProductId: %d\n",
-               products[i].name, products[i].price, products[i].quantity, products[i].productId);
+        printf("Name: %s, Price: %.2f, Quantity: %d, ProductId: %d, Sold at: %s\n",
+               products[i].name, products[i].price, products[i].quantity, products[i].productId, products[i].seller);
     }
     
-    Wallet* customer_wallet = create_wallet(customers, products);
+    Wallet* customer_wallet = create_wallet(customers, products, 15);
     printf("\nNew Wallet: %s, %s, %d\n", customer_wallet->owner->name, customer_wallet->product->name, customer_wallet->product->quantity);
     //create a new time object
     Time* t = initialize_default_time();
@@ -221,7 +243,7 @@ int main(int argc, char *argv[])
     {
         print_time(t);
         increment_time(t, 1, HOUR);
-        if (i > 9 && i < 17)
+        if (i >= 9 && i <= 17)
         {
             consume_product(customer_wallet, 1);
         }
