@@ -24,14 +24,14 @@
         "ProductId": 1,
         "name": "Gallon of Gasoline",
         "seller": "Kangaroo",
-        "price": 3.410,
+        "price": 3.41,
         "quantity": 10
     },
     {
         "ProductId": 1,
         "name": "Gallon of Gasoline",
         "seller": "Shell",
-        "price": 3.50,
+        "price": 3.36,
         "quantity": 10
     }
 ]

@@ -4,6 +4,7 @@
 typedef struct Customer Customer;
 typedef struct Product Product;
 typedef struct Wallet Wallet;
+typedef struct ProductAveragePrice ProductAveragePrice;
 
 Customer* parse_customers(const char *, int *);
 Product* parse_products(const char *, int *);
@@ -11,7 +12,8 @@ Wallet* create_wallet(Customer*, Product*, int);
 void free_wallet(Wallet*);
 float calculate_purchase_probability(Wallet*, Product*);
 int consume_product(Wallet*, int);
-int purchase_product(Wallet*, Product*, int, int);
+int purchase_amount(Wallet*, double);
+int purchase_product(Wallet*, Product*, int);
 void restock_product(Product*, int);
 
 #endif

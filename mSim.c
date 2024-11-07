@@ -39,11 +39,19 @@ struct Wallet
     int capacity;
 };
 
+struct ProductAveragePrice
+{
+    int productId;
+    double averagePrice;
+};
+
 double price_factors[MAX_HOURS] = {
     1.15, 1.15, 1.10, 1.10, 1.05, 1.05, 0.95, 0.9, 0.85, 0.8,   // Morning Prices
     0.75, 0.7,  0.8,  0.9,  1.0,  1.1,  1.2,  1.25, 1.2,  1.15, // Afternoon Prices
     1.1,  1.05, 1.0,  0.95                                      // Evening Prices
 };
+
+ProductAveragePrice newPrice;
 
 // Function to parse the customers.json file
 Customer* parse_customers(const char *filename, int *customer_count) 
@@ -172,23 +180,40 @@ int consume_product(Wallet* consumer, int quantity)
     }
 }
 
-int purchase_product(Wallet* wallet, Product* product, int quantity, int hour)
+int purchase_amount(Wallet* wallet, double price)
+{
+    int space = wallet->capacity - wallet->product->quantity;
+    if (space <= 0)
+        return 0;
+    double affordable_amount = wallet->owner->budget / price;
+    affordable_amount = space < affordable_amount ? space : affordable_amount;
+    double sensitivity = price > newPrice.averagePrice ? 0.5 : 1.0;
+    int amount = affordable_amount * sensitivity;
+    return amount;
+}
+
+int purchase_product(Wallet* wallet, Product* product, int hour)
 {
     if (wallet->product->productId != product->productId)
     {
         printf("The product does not match the wallet\n");
         return 1;
     }
-    int cost = wallet->product->price * quantity * price_factors[hour];
-    if (cost > wallet->owner->budget)
+    double gasPrice = product->price * price_factors[hour];
+    int quantity = purchase_amount(wallet, gasPrice);
+    double cost = quantity * gasPrice;
+
+    if (cost > wallet->owner->budget || quantity == 0)
     {
-        printf("The amount requested is out of budget\n");
+        printf("The amount requested is out of budget or not needed \n");
         return 1;
     }
     else
     {
         wallet->owner->budget -= cost;
         wallet->product->quantity += quantity;
+        printf("Purchased %d units at $%.2f per unit. Remaining budget: $%.2f\n",
+           quantity, gasPrice, wallet->owner->budget);
         return 0;
     }
 }
@@ -217,8 +242,13 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    
-    
+
+    newPrice.productId = 1;
+    double average = 0.0;
+    for (i = 0; i < product_count; i++) 
+        if (products[i].productId == 1)
+            average += products[i].price;
+    newPrice.averagePrice = average / (double) product_count;
 
     // Print parsed data
     printf("Customers:\n");
@@ -243,6 +273,8 @@ int main(int argc, char *argv[])
     {
         print_time(t);
         increment_time(t, 1, HOUR);
+        int random = rand() % product_count;
+        purchase_product(customer_wallet, &products[random], i);
         if (i >= 9 && i <= 17)
         {
             consume_product(customer_wallet, 1);
