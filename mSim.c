@@ -10,16 +10,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "cJSON.h"
-#include "time.h"
+#include "mytime.h"
 #include "mSim.h"
+
+
+enum PREFERENCE_T
+{
+    HABITUAL, //default
+    EFFICIENT, 
+    BRAND
+};
 
 // customer 
 struct Customer 
 {
     char *name;
     double budget;
-    char *preference; 
+    PREFERENCE_T preference; 
 };
 
 // product 
@@ -53,6 +62,49 @@ double price_factors[MAX_HOURS] = {
 
 ProductAveragePrice newPrice;
 
+//support function to duplicate a string to all lowercase
+char* change_to_lower(char* str)
+{
+    if (str == NULL) return NULL;    
+    char* lower_str = (char*)malloc(strlen(str) + 1);
+    if (lower_str == NULL) return NULL;
+    for (int i = 0; str[i] != '\0'; i++)
+        str[i] = tolower((unsigned char)str[i]);
+    lower_str[strlen(str)] = '\0';
+    return lower_str;
+}
+
+//translate a string to preference type
+PREFERENCE_T string_to_preference(char* str)
+{
+    char* temp = change_to_lower(str);
+    PREFERENCE_T preference;
+    if (strcmp(temp, "habitual") == 0)
+        preference = HABITUAL;
+    else if (strcmp(temp, "efficient") == 0)
+        preference = EFFICIENT;
+    else if (strcmp(temp, "brand") == 0)
+        preference = BRAND;
+    else
+    {
+        int random;
+        random = rand() % 3;
+        preference = random;
+    }
+    
+    return preference;
+}
+
+//translate a preference type to string
+const char* preference_to_string(PREFERENCE_T preference)
+{
+    static const char* preferenceNames[] = {"Habitual", "Efficient", "Brand"};
+    if (preference >= HABITUAL && preference <= BRAND)
+        return preferenceNames[preference];
+    else 
+        return "Uknown";
+}
+
 // Function to parse the customers.json file
 Customer* parse_customers(const char *filename, int *customer_count) 
 {
@@ -83,7 +135,7 @@ Customer* parse_customers(const char *filename, int *customer_count)
         cJSON *item = cJSON_GetArrayItem(json, i);
         customers[i].name = strdup(cJSON_GetObjectItem(item, "name")->valuestring);
         customers[i].budget = cJSON_GetObjectItem(item, "budget")->valuedouble;
-        customers[i].preference = strdup(cJSON_GetObjectItem(item, "preference")->valuestring);
+        customers[i].preference = string_to_preference(cJSON_GetObjectItem(item, "preference")->valuestring);
     }
     
     cJSON_Delete(json);
@@ -232,7 +284,8 @@ int main(int argc, char *argv[])
         return 1;
     }
     int i;
-    srand(1);
+    //srand(1);
+    srand((unsigned int)time(NULL));
     int customer_count, product_count;
     Customer *customers = parse_customers(argv[1], &customer_count);
     Product *products = parse_products(argv[2], &product_count);
@@ -254,7 +307,7 @@ int main(int argc, char *argv[])
     printf("Customers:\n");
     for (i = 0; i < customer_count; i++) {
         printf("Name: %s, Budget: %.2f, Preference: %s\n",
-               customers[i].name, customers[i].budget, customers[i].preference);
+               customers[i].name, customers[i].budget, preference_to_string(customers[i].preference));
     }
     
     printf("\nProducts:\n");
@@ -281,14 +334,15 @@ int main(int argc, char *argv[])
         }
     }
 
+
     // Free allocated memory
     for (int i = 0; i < customer_count; i++) {
         free(customers[i].name);
-        free(customers[i].preference);
     }
     for (int i = 0; i < product_count; i++) {
         free(products[i].name);
     }
+    
     free(customers);
     free(products);
 
