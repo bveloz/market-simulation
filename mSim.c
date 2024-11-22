@@ -11,9 +11,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <float.h>
 #include "cJSON.h"
 #include "mytime.h"
 #include "mSim.h"
+#include "mymath.h"
 
 
 enum PREFERENCE_T
@@ -38,29 +40,28 @@ struct Product
     char *name;
     char* seller;
     double price;
-    int quantity;
+    double adjustedPrice;
+    double quantity;
 };
 
 struct Wallet
 {
     Customer* owner;
     Product* product;
-    int capacity;
+    double capacity;
 };
 
-struct ProductAveragePrice
+struct ProductStatistics
 {
     int productId;
     double averagePrice;
+    double minPrice;
+    double maxPrice;
 };
 
-double price_factors[MAX_HOURS] = {
-    1.15, 1.15, 1.10, 1.10, 1.05, 1.05, 0.95, 0.9, 0.85, 0.8,   // Morning Prices
-    0.75, 0.7,  0.8,  0.9,  1.0,  1.1,  1.2,  1.25, 1.2,  1.15, // Afternoon Prices
-    1.1,  1.05, 1.0,  0.95                                      // Evening Prices
-};
 
-ProductAveragePrice newPrice;
+
+ProductStatistics gasStats;
 
 //support function to duplicate a string to all lowercase
 char* change_to_lower(char* str)
@@ -143,6 +144,13 @@ Customer* parse_customers(const char *filename, int *customer_count)
     return customers;
 }
 
+// Function to print a customer
+void print_customer(Customer* customer)
+{
+    printf("Name: %s, Budget: %.2f, Preference: %s\n",
+               customer->name, customer->budget, preference_to_string(customer->preference));
+}
+
 // Function to parse the products.json file 
 Product *parse_products(const char *filename, int *product_count) 
 {
@@ -175,12 +183,20 @@ Product *parse_products(const char *filename, int *product_count)
         products[i].name = strdup(cJSON_GetObjectItem(item, "name")->valuestring);
         products[i].seller = strdup(cJSON_GetObjectItem(item, "seller")->valuestring);
         products[i].price = cJSON_GetObjectItem(item, "price")->valuedouble;
+        products[i].adjustedPrice = products[i].adjustedPrice;
         products[i].quantity = cJSON_GetObjectItem(item, "quantity")->valueint;
     }
     
     cJSON_Delete(json);
     free(data);
     return products;
+}
+
+// Function that prints a product
+void print_product(Product* product)
+{
+    printf("Name: %s, Baseline Price: %.2f, Adjusted Price: %.2f, Quantity: %.2f, ProductId: %d, Sold at: %s\n",
+               product->name, product->price, product->adjustedPrice, product->quantity, product->productId, product->seller);
 }
 
 //function to create a wallet, customer begins with 0 items
@@ -203,6 +219,14 @@ void free_wallet(Wallet* w)
     w->product = NULL;
     free(w);
     w = NULL;
+}
+
+// random price adjustment factor
+void set_adjusted_price(Product* product)
+{
+    double random = random_bell_curve(gasStats.minPrice, gasStats.maxPrice, gasStats.averagePrice);
+    product->adjustedPrice = random;
+    print_product(product);
 }
 
 float calculate_purchase_probability(Wallet* wallet, Product* product)
@@ -239,7 +263,7 @@ int purchase_amount(Wallet* wallet, double price)
         return 0;
     double affordable_amount = wallet->owner->budget / price;
     affordable_amount = space < affordable_amount ? space : affordable_amount;
-    double sensitivity = price > newPrice.averagePrice ? 0.5 : 1.0;
+    double sensitivity = price > gasStats.averagePrice ? 0.5 : 1.0;
     int amount = affordable_amount * sensitivity;
     return amount;
 }
@@ -251,7 +275,7 @@ int purchase_product(Wallet* wallet, Product* product, int hour)
         printf("The product does not match the wallet\n");
         return 1;
     }
-    double gasPrice = product->price * price_factors[hour];
+    double gasPrice = product->adjustedPrice;
     int quantity = purchase_amount(wallet, gasPrice);
     double cost = quantity * gasPrice;
 
@@ -264,8 +288,8 @@ int purchase_product(Wallet* wallet, Product* product, int hour)
     {
         wallet->owner->budget -= cost;
         wallet->product->quantity += quantity;
-        printf("Purchased %d units at $%.2f per unit. Remaining budget: $%.2f\n",
-           quantity, gasPrice, wallet->owner->budget);
+        printf("Purchased %d %s from %s at $%.2f per unit. Remaining budget: $%.2f\n",
+           quantity, product->name ,product->seller, gasPrice, wallet->owner->budget);
         return 0;
     }
 }
@@ -296,41 +320,52 @@ int main(int argc, char *argv[])
     }
 
 
-    newPrice.productId = 1;
-    double average = 0.0;
+    gasStats.productId = 1;
+    double average = 0.0, min = DBL_MAX, max = DBL_MIN;
     for (i = 0; i < product_count; i++) 
+    {
         if (products[i].productId == 1)
+        {
             average += products[i].price;
-    newPrice.averagePrice = average / (double) product_count;
-
+            min = min > products[i].price ? products[i].price : min;
+            max = max < products[i].price ? products[i].price : max;
+        }
+    }
+    gasStats.averagePrice = average / (double) product_count;
+    gasStats.minPrice = min;
+    gasStats.maxPrice = max;
     // Print parsed data
     printf("Customers:\n");
-    for (i = 0; i < customer_count; i++) {
-        printf("Name: %s, Budget: %.2f, Preference: %s\n",
-               customers[i].name, customers[i].budget, preference_to_string(customers[i].preference));
-    }
+    for (i = 0; i < customer_count; i++) 
+        print_customer(&customers[i]);
     
     printf("\nProducts:\n");
-    for (i = 0; i < product_count; i++) {
-        printf("Name: %s, Price: %.2f, Quantity: %d, ProductId: %d, Sold at: %s\n",
-               products[i].name, products[i].price, products[i].quantity, products[i].productId, products[i].seller);
-    }
+    for (i = 0; i < product_count; i++) 
+        set_adjusted_price(&products[i]);
+    
     
     Wallet* customer_wallet = create_wallet(customers, products, 15);
-    printf("\nNew Wallet: %s, %s, %d\n", customer_wallet->owner->name, customer_wallet->product->name, customer_wallet->product->quantity);
+    printf("\nNew Wallet: %s, %s, %d\n", customer_wallet->owner->name, customer_wallet->product->name, customer_wallet->product->quantity, customer_wallet->capacity);
     //create a new time object
     Time* t = initialize_default_time();
     printf("Start of day:\n");
     //pass through a 24 hour cycle
     for (i = 0; i < MAX_HOURS; i++)
     {
+        printf("\n");
         print_time(t);
-        increment_time(t, 1, HOUR);
+        //random price adjustment every 2 hours
         int random = rand() % product_count;
+        if (i % 2 == 0)
+        {
+            printf("Random price adjustment\n");
+            set_adjusted_price(&products[random]);
+        }
+        increment_time(t, 1, HOUR);
         purchase_product(customer_wallet, &products[random], i);
         if (i >= 9 && i <= 17)
         {
-            consume_product(customer_wallet, 1);
+            consume_product(customer_wallet, rand() % 2);
         }
     }
 
